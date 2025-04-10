@@ -25,15 +25,6 @@ type UserService struct {
 	UserRepo *repository.UserRepository
 }
 
-// 辅助函数
-func successResult(msg string, data interface{}) *dto.Result {
-	return &dto.Result{Code: 200, Msg: msg, Data: data}
-}
-
-func errorResult(code int, msg string) *dto.Result {
-	return &dto.Result{Code: code, Msg: msg, Data: nil}
-}
-
 // NewUserService 创建用户服务
 func NewUserService(userRepo *repository.UserRepository) *UserService {
 	return &UserService{UserRepo: userRepo}
@@ -150,7 +141,7 @@ func (s *UserService) Update(userDTO *dto.UserDTO) *dto.Result {
 		Name:     sql.NullString{String: userDTO.Name, Valid: userDTO.Name != ""},
 		Phone:    sql.NullString{String: userDTO.Phone, Valid: userDTO.Phone != ""},
 	}
-	
+
 	err = s.UserRepo.Update(user)
 	if err != nil {
 		log.Println("更新用户失败:", err)
