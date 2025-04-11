@@ -21,8 +21,8 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 
 // Save 保存产品
 func (r *ProductRepository) Save(product *model.Product) (int, error) {
-	query := "INSERT INTO product(pd_name, type, image, pd_description) VALUES(?, ?, ?, ?)"
-	result, err := r.DB.Exec(query, product.Name, product.Type, product.Image, product.Description)
+	query := "INSERT INTO product(pd_name, type, image, pd_description, unit_price) VALUES(?, ?, ?, ?, ?)"
+	result, err := r.DB.Exec(query, product.Name, product.Type, product.Image, product.Description, product.UnitPrice)
 	if err != nil {
 		log.Println("保存产品失败:", err)
 		return 0, err
@@ -39,8 +39,8 @@ func (r *ProductRepository) Save(product *model.Product) (int, error) {
 
 // Update 更新产品
 func (r *ProductRepository) Update(product *model.Product) error {
-	query := "UPDATE product SET pd_name = ?, type = ?, image = ?, pd_description = ? WHERE pd_id = ?"
-	_, err := r.DB.Exec(query, product.Name, product.Type, product.Image, product.Description, product.ID)
+	query := "UPDATE product SET pd_name = ?, type = ?, image = ?, pd_description = ?, unit_price = ? WHERE pd_id = ?"
+	_, err := r.DB.Exec(query, product.Name, product.Type, product.Image, product.Description, product.UnitPrice, product.ID)
 	if err != nil {
 		log.Println("更新产品失败:", err)
 		return err
@@ -61,11 +61,11 @@ func (r *ProductRepository) Delete(id int) error {
 
 // GetByID 根据ID获取产品
 func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
-	query := "SELECT pd_id, pd_name, type, image, pd_description FROM product WHERE pd_id = ?"
+	query := "SELECT pd_id, pd_name, type, image, pd_description, unit_price FROM product WHERE pd_id = ?"
 	row := r.DB.QueryRow(query, id)
 
 	product := &model.Product{}
-	err := row.Scan(&product.ID, &product.Name, &product.Type, &product.Image, &product.Description)
+	err := row.Scan(&product.ID, &product.Name, &product.Type, &product.Image, &product.Description, &product.UnitPrice)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -79,7 +79,7 @@ func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 
 // FindAll 查找所有产品
 func (r *ProductRepository) FindAll() ([]*model.Product, error) {
-	query := "SELECT pd_id, pd_name, type, image, pd_description FROM product"
+	query := "SELECT pd_id, pd_name, type, image, pd_description, unit_price FROM product"
 	rows, err := r.DB.Query(query)
 	if err != nil {
 		log.Println("查询产品失败:", err)
@@ -90,7 +90,7 @@ func (r *ProductRepository) FindAll() ([]*model.Product, error) {
 	var products []*model.Product
 	for rows.Next() {
 		product := &model.Product{}
-		err := rows.Scan(&product.ID, &product.Name, &product.Type, &product.Image, &product.Description)
+		err := rows.Scan(&product.ID, &product.Name, &product.Type, &product.Image, &product.Description, &product.UnitPrice)
 		if err != nil {
 			log.Println("读取产品数据失败:", err)
 			return nil, err
@@ -118,7 +118,7 @@ func (r *ProductRepository) FindByCondition(name, productType string) ([]*model.
 	}
 
 	// 构建SQL
-	query := "SELECT pd_id, pd_name, type, image, pd_description FROM product"
+	query := "SELECT pd_id, pd_name, type, image, pd_description, unit_price FROM product"
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
@@ -134,7 +134,7 @@ func (r *ProductRepository) FindByCondition(name, productType string) ([]*model.
 	var products []*model.Product
 	for rows.Next() {
 		product := &model.Product{}
-		err := rows.Scan(&product.ID, &product.Name, &product.Type, &product.Image, &product.Description)
+		err := rows.Scan(&product.ID, &product.Name, &product.Type, &product.Image, &product.Description, &product.UnitPrice)
 		if err != nil {
 			log.Println("读取产品数据失败:", err)
 			return nil, err
@@ -176,9 +176,9 @@ func (r *ProductRepository) PageQuery(page, pageSize int, name, productType stri
 		return nil, 0, err
 	}
 
-	// 查询当前页数据
+	// 查询当前页数据 - 添加 unit_price 字段
 	offset := (page - 1) * pageSize
-	dataQuery := fmt.Sprintf("SELECT pd_id, pd_name, type, image, pd_description FROM product%s LIMIT ? OFFSET ?", whereClause)
+	dataQuery := fmt.Sprintf("SELECT pd_id, pd_name, type, image, pd_description, unit_price FROM product%s LIMIT ? OFFSET ?", whereClause)
 	queryArgs := append(args, pageSize, offset)
 
 	rows, err := r.DB.Query(dataQuery, queryArgs...)
@@ -191,7 +191,8 @@ func (r *ProductRepository) PageQuery(page, pageSize int, name, productType stri
 	var products []*model.Product
 	for rows.Next() {
 		product := &model.Product{}
-		err := rows.Scan(&product.ID, &product.Name, &product.Type, &product.Image, &product.Description)
+		// 添加 unit_price 字段到 Scan 方法
+		err := rows.Scan(&product.ID, &product.Name, &product.Type, &product.Image, &product.Description, &product.UnitPrice)
 		if err != nil {
 			log.Println("读取产品数据失败:", err)
 			return nil, 0, err

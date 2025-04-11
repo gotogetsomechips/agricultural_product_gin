@@ -8,6 +8,30 @@ import (
 	"agricultural_product_gin/repository"
 )
 
+type FrontendProduct struct {
+	ID          int     `json:"pdId"`
+	Name        string  `json:"pdName"`
+	Type        string  `json:"type"`
+	Image       string  `json:"image"`
+	Description string  `json:"pdDescription"`
+	UnitPrice   float64 `json:"unitPrice"`
+}
+
+func convertProductForFrontend(p *model.Product) *FrontendProduct {
+	var price float64
+	if p.UnitPrice.Valid {
+		price = p.UnitPrice.Float64
+	}
+	return &FrontendProduct{
+		ID:          p.ID,
+		Name:        p.Name,
+		Type:        p.Type,
+		Image:       p.Image,
+		Description: p.Description,
+		UnitPrice:   price,
+	}
+}
+
 // ProductService 产品服务
 type ProductService struct {
 	ProductRepo *repository.ProductRepository
@@ -20,12 +44,12 @@ func NewProductService(productRepo *repository.ProductRepository) *ProductServic
 
 // CreateProduct 创建产品
 func (s *ProductService) CreateProduct(productDTO *dto.ProductDTO) *dto.Result {
-	// 转换DTO为模型
 	product := &model.Product{
 		Name:        productDTO.Name,
 		Type:        productDTO.Type,
 		Image:       productDTO.Image,
 		Description: productDTO.Description,
+		UnitPrice:   productDTO.UnitPrice,
 	}
 
 	// 保存产品
@@ -59,8 +83,8 @@ func (s *ProductService) UpdateProduct(productDTO *dto.ProductDTO) *dto.Result {
 		Type:        productDTO.Type,
 		Image:       productDTO.Image,
 		Description: productDTO.Description,
+		UnitPrice:   productDTO.UnitPrice,
 	}
-
 	// 更新产品
 	err = s.ProductRepo.Update(product)
 	if err != nil {
@@ -121,10 +145,15 @@ func (s *ProductService) GetAllProducts() *dto.Result {
 		return errorResult(500, "系统错误")
 	}
 
-	// 直接返回数据，不显示弹窗
+	// 转换为前端友好的结构
+	var frontendProducts []*FrontendProduct
+	for _, p := range products {
+		frontendProducts = append(frontendProducts, convertProductForFrontend(p))
+	}
+
 	return &dto.Result{
 		Code: 200,
-		Data: products,
+		Data: frontendProducts,
 	}
 }
 
