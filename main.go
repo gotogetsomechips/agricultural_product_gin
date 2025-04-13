@@ -174,7 +174,15 @@ func main() {
 		saleInfoGroup.POST("/page", saleInfoController.PageQuery) // 分页查询
 	}
 	r.POST("/upload", uploadController.Upload)
+	traceabilityController := controller.NewTraceabilityController(
+		productionService,
+		productService,
+		logisticsService,
+		saleInfoService,
+	)
 
+	// 注册溯源路由到根路由组
+	traceabilityController.RegisterRoutes(r.Group(""))
 	// 启动服务器
 	log.Println("服务器启动在 :8080 端口")
 	if err := r.Run(":8080"); err != nil {
